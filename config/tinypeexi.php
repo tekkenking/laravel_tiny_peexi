@@ -55,10 +55,10 @@ return [
     'advanced' => [
         // Timeout in seconds for API requests
         'timeout' => env('TINYPEEXI_TIMEOUT', 10),
-        
+
         // Number of times to retry failed requests
         'retries' => env('TINYPEEXI_RETRIES', 3),
-        
+
         // Delay between retries in milliseconds
         'retry_delay' => env('TINYPEEXI_RETRY_DELAY', 500),
 
@@ -72,7 +72,7 @@ return [
 
             // Strip EXIF metadata on original upload (if supported by api)
             'strip_metadata' => env('TINYPEEXI_STRIP_METADATA', true),
-            
+
             // Immediately trigger an optimization routine on upload
             'auto_optimize' => env('TINYPEEXI_AUTO_OPTIMIZE', false),
         ],
@@ -92,11 +92,11 @@ return [
         'ecommerce' => [
             'canvas' => 1024,
             'pad' => 40,
-            'background' => 'white', // Can be 'white', 'transparent', or hex 'ffffff'
-            'format' => 'jpeg',      // Target format: 'jpeg', 'png', 'webp', 'avif'
+            //'background' => 'white', // Can be 'white', 'transparent', or hex 'ffffff'
+            'format' => 'webp',      // Target format: 'jpeg', 'png', 'webp', 'avif'
             'quality' => 85,         // Compression quality (1-100)
         ],
-        
+
         // Example of defining your own global transformation presets
         'thumbnail' => [
             'width' => 200,
@@ -106,7 +106,7 @@ return [
             'format' => 'webp',
             'quality' => 80
         ],
-        
+
         // Example: Watermarked
         'watermarked' => [
             'watermark' => [
@@ -127,7 +127,7 @@ return [
             'saturation' => env('TINYPEEXI_DEFAULT_SATURATION', null), // 0.0 - 2.0
             'grayscale' => env('TINYPEEXI_DEFAULT_GRAYSCALE', false),
         ],
-        
+
         // Global orientation defaults
         'orientation' => [
             'rotate' => null,       // 0, 90, 180, 270, -90

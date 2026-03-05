@@ -384,7 +384,7 @@ class VariantBuilder
         $this->params['canvas'] = $canvasSize ?? ($defaults['canvas'] ?? 1024);
         $this->params['pad'] = $padding ?? ($defaults['pad'] ?? 40);
         $this->params['bg'] = $background ?? ($defaults['background'] ?? 'white');
-        $this->params['format'] = $format ?? ($defaults['format'] ?? 'jpeg');
+        $this->params['format'] = $format ?? ($defaults['format'] ?? 'webp');
         $this->params['q'] = $quality ?? ($defaults['quality'] ?? 85);
 
         return $this->generate();
