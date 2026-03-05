@@ -96,6 +96,40 @@ The `uploadMany()` method returns an array of `AssetDto` objects.
 
 ---
 
+### Viewing & Displaying Images
+
+When you want to display an uploaded image in your Blade templates or return it in a JSON API response, **you do not download the file contents back into Laravel**. 
+
+Instead, TinyPeexi acts as a URL builder. You generate a public CDN/delivery URL that points directly to the Lossless Media backend, and the client's browser loads the image directly from there.
+
+#### In a Blade Template:
+
+```html
+<!-- Display the original image -->
+<img src="{{ TinyPeexi::variant($product->image_sha)->url() }}" alt="Product">
+
+<!-- Display an optimized webp thumbnail -->
+<img src="{{ TinyPeexi::variant($product->image_sha)->preset('thumbnail')->url() }}" alt="Thumbnail">
+```
+
+#### In an API Resource / Controller:
+
+```php
+public function show(Product $product)
+{
+    return response()->json([
+        'id' => $product->id,
+        'name' => $product->name,
+        // Send the URL string to the frontend
+        'image_url' => TinyPeexi::variant($product->image_sha)->ecommerceVariant()->url()
+    ]);
+}
+```
+
+By doing this, your Laravel application saves bandwidth and memory, as all image delivery and on-the-fly transformations are handled entirely by the `aipeexi` backend.
+
+---
+
 ### Deleting Assets
 
 ```php
