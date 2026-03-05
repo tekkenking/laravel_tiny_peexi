@@ -96,37 +96,33 @@ The `uploadMany()` method returns an array of `AssetDto` objects.
 
 ---
 
-### Viewing & Displaying Images
+### 🎨 Blade & View Helpers
 
-When you want to display an uploaded image in your Blade templates or return it in a JSON API response, **you do not download the file contents back into Laravel**. 
+TinyPeexi includes a global helper function `tinypeexi()` to natively integrate into your views. Furthermore, the Variant builder automatically converts directly into a URL string when echoed, keeping your Blade templates incredibly clean.
 
-Instead, TinyPeexi acts as a URL builder. You generate a public CDN/delivery URL that points directly to the Lossless Media backend, and the client's browser loads the image directly from there.
-
-#### In a Blade Template:
+#### 1. The Fluent Way (Cleanest)
+You don't need to call `->url()`. Just echo the builder directly!
 
 ```html
-<!-- Display the original image -->
-<img src="{{ TinyPeexi::variant($product->image_sha)->url() }}" alt="Product">
+<!-- Automatically outputs the URL string -->
+<img src="{{ tinypeexi($product->image_sha)->resize(400)->format('webp') }}">
 
-<!-- Display an optimized webp thumbnail -->
-<img src="{{ TinyPeexi::variant($product->image_sha)->preset('thumbnail')->url() }}" alt="Thumbnail">
+<img src="{{ tinypeexi($product->image_sha)->ecommerceVariant() }}">
 ```
 
-#### In an API Resource / Controller:
+#### 2. The Array Shorthand (Shortest)
+Pass parameters dynamically if you prefer:
 
-```php
-public function show(Product $product)
-{
-    return response()->json([
-        'id' => $product->id,
-        'name' => $product->name,
-        // Send the URL string to the frontend
-        'image_url' => TinyPeexi::variant($product->image_sha)->ecommerceVariant()->url()
-    ]);
-}
+```html
+<img src="{{ tinypeexi($product->image_sha, ['w' => 800, 'format' => 'webp']) }}">
 ```
 
-By doing this, your Laravel application saves bandwidth and memory, as all image delivery and on-the-fly transformations are handled entirely by the `aipeexi` backend.
+#### 3. Using Config Presets
+Instantly apply predefined transformations from your `tinypeexi.php` config:
+
+```html
+<img src="{{ tinypeexi($product->image_sha, 'thumbnail') }}">
+```
 
 ---
 

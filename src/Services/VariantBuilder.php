@@ -529,8 +529,28 @@ class VariantBuilder
     /**
      * Get the current parameters array (useful for debugging).
      */
-    public function toArray(): array
+    /**
+     * Set a raw transformation parameter by its API key.
+     * Useful for helpers and dynamic array options.
+     */
+    public function setRawParam(string $key, mixed $value): static
     {
-        return array_merge(['sha' => $this->sha], $this->params);
+        $this->params[$key] = $value;
+        return $this;
+    }
+
+    /**
+     * Magic method to auto-generate the URL when treated as a string.
+     * This avoids needing to call ->url() directly inside Blade views.
+     */
+    public function __toString(): string
+    {
+        try {
+            return $this->generate()->url();
+        } catch (\Exception $e) {
+            // Magic methods cannot throw exceptions in old PHP versions, 
+            // but we can return an empty string or fallback in case of missing configs
+            return '';
+        }
     }
 }
