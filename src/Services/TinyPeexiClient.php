@@ -74,7 +74,64 @@ class TinyPeexiClient
 
         $data = $response->json();
 
-        return new AssetDto($data['sha256'] ?? $data['sha']);
+        // The Rust API currently returns an array of objects when uploading
+        // Ensure we handle both single object and array return formats safely.
+        $assetData = isset($data[0]) ? $data[0] : $data;
+
+        return new AssetDto($assetData['sha256'] ?? $assetData['sha']);
+    }
+
+    /**
+     * Upload multiple assets to the Lossless Media Service in a single request.
+     *
+     * @param array<string|UploadedFile> $files Array of files or UploadedFile instances
+     * @return array<AssetDto>
+     * @throws TinyPeexiException
+     */
+    public function uploadMany(array $files): array
+    {
+        $client = $this->client();
+
+        if (empty($files)) {
+            return [];
+        }
+
+        foreach ($files as $index => $file) {
+            $contents = '';
+            $filename = "image_{$index}.jpg";
+
+            if ($file instanceof UploadedFile) {
+                $contents = file_get_contents($file->getRealPath());
+                $filename = $file->getClientOriginalName();
+            } else {
+                if (!file_exists($file)) {
+                    throw new TinyPeexiException("File not found at path: {$file}");
+                }
+                $contents = file_get_contents($file);
+                $filename = basename($file);
+            }
+
+            // Using 'files[]' as the field name which the Rust backend supports
+            $client->attach('files[]', $contents, $filename);
+        }
+
+        $response = $client->post('/v1/assets');
+
+        if ($response->failed()) {
+            throw new TinyPeexiException('Batch upload failed: ' . $response->body(), $response->status());
+        }
+
+        $data = $response->json();
+        $assets = [];
+
+        // The backend returns an array of uploaded asset objects
+        if (is_array($data)) {
+            foreach ($data as $assetData) {
+                $assets[] = new AssetDto($assetData['sha256'] ?? $assetData['sha']);
+            }
+        }
+
+        return $assets;
     }
 
     /**

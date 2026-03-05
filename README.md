@@ -78,6 +78,22 @@ echo $asset->sha;
 
 The `upload()` method returns an `AssetDto` with the asset's `sha` (SHA-256 hash), which you'll use as the identifier for all future operations on this image.
 
+#### Uploading Multiple Files at Once
+
+TinyPeexi supports uploading multiple files in a single HTTP request (the backend defaults to a max of 10 files per request).
+
+```php
+$files = $request->file('gallery_images'); // Array of UploadedFile
+
+$assets = TinyPeexi::uploadMany($files);
+
+foreach ($assets as $asset) {
+    echo $asset->sha . "\n";
+}
+```
+
+The `uploadMany()` method returns an array of `AssetDto` objects.
+
 ---
 
 ### Deleting Assets
@@ -577,6 +593,7 @@ TinyPeexi::shouldReceive('upload')
 | Method                     | Description                              |
 |----------------------------|------------------------------------------|
 | `TinyPeexi::upload($file)` | Upload an image, returns `AssetDto`     |
+| `TinyPeexi::uploadMany(array $files)` | Upload multiple images, returns `AssetDto[]` |
 | `TinyPeexi::delete($sha)`  | Delete an asset                          |
 | `TinyPeexi::variant($sha)` | Start building a variant                 |
 | `->resize($w, $h?)`        | Set target dimensions                    |
