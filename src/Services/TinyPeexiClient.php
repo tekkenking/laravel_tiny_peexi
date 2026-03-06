@@ -90,7 +90,7 @@ class TinyPeexiClient
      */
     public function uploadMany(array|string|UploadedFile $files): array
     {
-        $client = $this->client();
+        $multiparts = [];
 
         if (!is_array($files)) {
             $files = [$files];
@@ -115,24 +115,22 @@ class TinyPeexiClient
                 $filename = basename($file);
             }
 
-            // Using 'files[]' as the field name which the Rust backend supports.
-            // In Laravel's Http client, calling attach() multiple times with the exact same
-            // key ('files[]') will simply overwrite the previous one.
-            // To send an array of files, we must make the key unique but still parsable as an array by the backend
-            // Note: The Rust rocket/axum backend using multipart standard will parse fields named 'files[]'
-            // even if we just use the name `files[]`. To bypass Laravel's overwriting, we don't use 'files[]' 
-            // as the dictionary key directly, but we can pass an array of files to attach, or we can use curl directly if Guzzle acts up.
-            // Actually, Guzzle supports multiple values for the same name if we pass them as separate multi-part elements.
-            // But Laravel's `attach` method uses the "name" as the array key in its internal `$pendingFiles` array!
-            // To fix this, we can use a unique name, or fallback to the underlying `withBody` if needed, 
-            // but the cleanest and fully supported way in Laravel 9+ is to construct the multipart array manually.
-
-            // The simplest workaround in Laravel's wrapper is to just append a space or specific index 
-            // to the name internally if it overrides, but the best way is to interact with Guzzle's `multipart` directly or use indexing.
-            $client->attach("files[{$index}]", $contents, $filename);
+            $multiparts[] = [
+                'name' => 'files[]',
+                'contents' => $contents,
+                'filename' => $filename,
+            ];
         }
 
-        $response = $client->post('/v1/assets');
+        // We bypass the PendingRequest `attach()` helper because it overwrites duplicate keys like `files[]`.
+        // Instead, we interact with the Http client directly by formatting a Guzzle compliant multipart array.
+        $response = Http::baseUrl(rtrim($this->config['api_url'] ?? 'http://localhost:8080', '/'))
+            ->timeout($this->config['advanced']['timeout'] ?? 10)
+            ->withToken($this->config['api_key'] ?? '')
+            ->acceptJson()
+            ->send('POST', '/v1/assets', [
+                'multipart' => $multiparts,
+            ]);
 
         if ($response->failed()) {
             throw new TinyPeexiException('Batch upload failed: ' . $response->body(), $response->status());
