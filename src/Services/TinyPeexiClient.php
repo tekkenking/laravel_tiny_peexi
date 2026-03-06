@@ -177,7 +177,12 @@ class TinyPeexiClient
      */
     public function requestVariant(array $payload): void
     {
-        $response = $this->client()->post('/v1/variants', $payload);
+        $sha = $payload['sha'] ?? '';
+        unset($payload['sha']);
+
+        // The backend expects the query parameters (specifically ?sha=...) 
+        // to be in the Query string, not just the JSON body.
+        $response = $this->client()->post("/v1/variants?sha={$sha}", $payload);
 
         if ($response->failed()) {
             throw new TinyPeexiException('Variant generation failed: ' . $response->body(), $response->status());
