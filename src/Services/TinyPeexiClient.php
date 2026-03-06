@@ -125,26 +125,33 @@ class TinyPeexiClient
         $token = $this->config['api_key'] ?? '';
         $timeout = $this->config['advanced']['timeout'] ?? 10;
 
-        $postFields = [];
-        foreach ($multiparts as $index => $part) {
-            // In pure PHP cURL, passing multiple files under the same "name[]" key requires using sequential array indexing
-            // like "files[0]", "files[1]" in the $postFields array, which cURL converts to "files[]" strictly in the multipart boundary!
-            $postFields["files[{$index}]"] = curl_file_create(
-                $part['filepath'],
-                mime_content_type($part['filepath']) ?: 'application/octet-stream',
-                $part['filename']
-            );
+        $boundary = \Illuminate\Support\Str::random(24);
+        $eol = "\r\n";
+        $data = '';
+
+        // Manually build the multipart/form-data payload string.
+        // This is the ONLY way to force PHP cURL to send multiple exact identical "files[]" fields
+        // because native PHP arrays physically overwrite string keys (e.g., $postFields['files[]'] = ... ).
+        foreach ($multiparts as $part) {
+            $data .= "--" . $boundary . $eol;
+            $data .= 'Content-Disposition: form-data; name="files[]"; filename="' . $part['filename'] . '"' . $eol;
+            $data .= 'Content-Type: ' . (mime_content_type($part['filepath']) ?: 'application/octet-stream') . $eol;
+            $data .= $eol;
+            $data .= file_get_contents($part['filepath']) . $eol;
         }
+        $data .= "--" . $boundary . "--" . $eol;
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $postFields,
+            CURLOPT_POSTFIELDS => $data,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => $timeout,
             CURLOPT_HTTPHEADER => [
                 'Authorization: Bearer ' . $token,
                 'Accept: application/json',
+                'Content-Type: multipart/form-data; boundary=' . $boundary,
+                'Content-Length: ' . strlen($data),
             ],
         ]);
 
