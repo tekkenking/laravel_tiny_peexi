@@ -177,12 +177,10 @@ class TinyPeexiClient
      */
     public function requestVariant(array $payload): void
     {
-        $sha = $payload['sha'] ?? '';
-        unset($payload['sha']);
-
-        // The backend expects the query parameters (specifically ?sha=...) 
-        // to be in the Query string, not just the JSON body.
-        $response = $this->client()->post("/v1/variants?sha={$sha}", $payload);
+        // The backend uses a Query extractor in Rust which expects all parameters 
+        // (sha, w, h, format, q, etc.) to be in the URL query string, not the JSON body.
+        $queryString = http_build_query($payload);
+        $response = $this->client()->post("/v1/variants?{$queryString}");
 
         if ($response->failed()) {
             throw new TinyPeexiException('Variant generation failed: ' . $response->body(), $response->status());
@@ -195,7 +193,8 @@ class TinyPeexiClient
      */
     public function requestBatchVariant(array $payload): void
     {
-        $response = $this->client()->post('/v1/variants/batch', $payload);
+        $queryString = http_build_query($payload);
+        $response = $this->client()->post("/v1/variants/batch?{$queryString}");
 
         if ($response->failed()) {
             throw new TinyPeexiException('Batch variant generation failed: ' . $response->body(), $response->status());
