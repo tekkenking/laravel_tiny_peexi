@@ -84,13 +84,17 @@ class TinyPeexiClient
     /**
      * Upload multiple assets to the Lossless Media Service in a single request.
      *
-     * @param array<string|UploadedFile> $files Array of files or UploadedFile instances
+     * @param array<string|UploadedFile>|string|UploadedFile $files Array of files, or a single file/UploadedFile
      * @return array<AssetDto>
      * @throws TinyPeexiException
      */
-    public function uploadMany(array $files): array
+    public function uploadMany(array|string|UploadedFile $files): array
     {
         $client = $this->client();
+
+        if (!is_array($files)) {
+            $files = [$files];
+        }
 
         if (empty($files)) {
             return [];
