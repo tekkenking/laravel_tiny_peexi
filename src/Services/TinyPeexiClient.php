@@ -123,7 +123,8 @@ class TinyPeexiClient
         }
 
         // We bypass the PendingRequest `attach()` helper because it overwrites duplicate keys like `files[]`.
-        // Instead, we interact with the Http client directly by formatting a Guzzle compliant multipart array.
+        // Guzzle (the underlying client) supports duplicate multipart names natively, so we pass
+        // the completely un-flattened `multipart` array directly into the `send` method!
         $response = Http::baseUrl(rtrim($this->config['api_url'] ?? 'http://localhost:8080', '/'))
             ->timeout($this->config['advanced']['timeout'] ?? 10)
             ->withToken($this->config['api_key'] ?? '')
