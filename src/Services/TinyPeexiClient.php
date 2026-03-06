@@ -101,43 +101,63 @@ class TinyPeexiClient
         }
 
         foreach ($files as $index => $file) {
-            $contents = '';
+            $filepath = '';
             $filename = "image_{$index}.jpg";
 
             if ($file instanceof UploadedFile) {
-                $contents = file_get_contents($file->getRealPath());
+                $filepath = $file->getRealPath();
                 $filename = $file->getClientOriginalName();
             } else {
                 if (!file_exists($file)) {
                     throw new TinyPeexiException("File not found at path: {$file}");
                 }
-                $contents = file_get_contents($file);
+                $filepath = realpath($file);
                 $filename = basename($file);
             }
 
             $multiparts[] = [
-                'name' => 'files[]',
-                'contents' => $contents,
+                'filepath' => $filepath,
                 'filename' => $filename,
             ];
         }
 
-        // We bypass the PendingRequest `attach()` helper because it overwrites duplicate keys like `files[]`.
-        // Guzzle (the underlying client) supports duplicate multipart names natively, so we pass
-        // the completely un-flattened `multipart` array directly into the `send` method!
-        $response = Http::baseUrl(rtrim($this->config['api_url'] ?? 'http://localhost:8080', '/'))
-            ->timeout($this->config['advanced']['timeout'] ?? 10)
-            ->withToken($this->config['api_key'] ?? '')
-            ->acceptJson()
-            ->send('POST', '/v1/assets', [
-                'multipart' => $multiparts,
-            ]);
+        $url = rtrim($this->config['api_url'] ?? 'http://localhost:8080', '/') . '/v1/assets';
+        $token = $this->config['api_key'] ?? '';
+        $timeout = $this->config['advanced']['timeout'] ?? 10;
 
-        if ($response->failed()) {
-            throw new TinyPeexiException('Batch upload failed: ' . $response->body(), $response->status());
+        $postFields = [];
+        foreach ($multiparts as $index => $part) {
+            // In pure PHP cURL, passing multiple files under the same "name[]" key requires using sequential array indexing
+            // like "files[0]", "files[1]" in the $postFields array, which cURL converts to "files[]" strictly in the multipart boundary!
+            $postFields["files[{$index}]"] = curl_file_create(
+                $part['filepath'],
+                mime_content_type($part['filepath']) ?: 'application/octet-stream',
+                $part['filename']
+            );
         }
 
-        $data = $response->json();
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $postFields,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $token,
+                'Accept: application/json',
+            ],
+        ]);
+
+        $responseBody = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($error || $httpCode >= 400) {
+            throw new TinyPeexiException('Batch upload failed: ' . ($error ?: $responseBody), $httpCode);
+        }
+
+        $data = json_decode($responseBody, true);
         $assets = [];
 
         // The backend returns an array of uploaded asset objects
