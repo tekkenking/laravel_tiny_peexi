@@ -523,7 +523,7 @@ class VariantBuilder
         $width = $this->params['w'] ?? null;
         $name = $width ? "w{$width}.{$format}" : "original.{$format}";
 
-        return "{$baseUrl}/a/{$tenant}/{$this->sha}/{$name}";
+        return "{$baseUrl}/m/{$tenant}/{$this->sha}/{$name}";
     }
 
     /**
