@@ -125,46 +125,18 @@ class TinyPeexiClient
         $token = $this->config['api_key'] ?? '';
         $timeout = $this->config['advanced']['timeout'] ?? 10;
 
-        $boundary = \Illuminate\Support\Str::random(24);
-        $eol = "\r\n";
-        $data = '';
-
-        // Manually build the multipart/form-data payload string.
-        // This is the ONLY way to force PHP cURL to send multiple exact identical "files[]" fields
-        // because native PHP arrays physically overwrite string keys (e.g., $postFields['files[]'] = ... ).
+        $client = $this->client();
         foreach ($multiparts as $part) {
-            $data .= "--" . $boundary . $eol;
-            $data .= 'Content-Disposition: form-data; name="files[]"; filename="' . $part['filename'] . '"' . $eol;
-            $data .= 'Content-Type: ' . (mime_content_type($part['filepath']) ?: 'application/octet-stream') . $eol;
-            $data .= $eol;
-            $data .= file_get_contents($part['filepath']) . $eol;
-        }
-        $data .= "--" . $boundary . "--" . $eol;
-
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $data,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => $timeout,
-            CURLOPT_HTTPHEADER => [
-                'Authorization: Bearer ' . $token,
-                'Accept: application/json',
-                'Content-Type: multipart/form-data; boundary=' . $boundary,
-                'Content-Length: ' . strlen($data),
-            ],
-        ]);
-
-        $responseBody = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
-
-        if ($error || $httpCode >= 400) {
-            throw new TinyPeexiException('Batch upload failed: ' . ($error ?: $responseBody), $httpCode);
+            $client->attach('files[]', file_get_contents($part['filepath']), $part['filename']);
         }
 
-        $data = json_decode($responseBody, true);
+        $response = $client->post('/v1/assets');
+
+        if ($response->failed()) {
+            throw new TinyPeexiException('Batch upload failed: ' . $response->body(), $response->status());
+        }
+
+        $data = $response->json();
         $assets = [];
 
         // The backend returns an array of uploaded asset objects
