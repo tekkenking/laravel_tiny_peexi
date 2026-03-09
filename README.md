@@ -126,6 +126,27 @@ Instantly apply predefined transformations from your `tinypeexi.php` config:
 
 ---
 
+### Bulk Asset Migration
+
+TinyPeexi includes a powerful Artisan command to migrate your existing local files into the Lossless Media Service. It is memory-safe, supports batching, queue-based variant generation, and uses a CSV file (`storage/app/tinypeexi_migration_results.csv`) for idempotency, meaning if the process dies, you can run the exact same command again and it will pick up right where it left off!
+
+```bash
+php artisan tinypeexi:migrate \
+    --path="/var/www/uploads/2023|/var/www/uploads/2024" \
+    --ext="jpg|png|webp" \
+    --starts-with="product_|user_" \
+    --variants="w800,h800|w200" \
+    --batch=50
+```
+
+- `--path`: Pipe-separated list of directories to scan.
+- `--ext`: Pipe-separated list of extensions to include.
+- `--starts-with`: Optional pipe-separated list of filename prefixes to include.
+- `--variants`: Optional pipe-separated list of variant dimensions to generate in the background (dispatches `GenerateTinyPeexiVariantJob`).
+- `--batch`: Number of originals to upload per HTTP request (default: 50).
+
+---
+
 ### Deleting Assets
 
 ```php

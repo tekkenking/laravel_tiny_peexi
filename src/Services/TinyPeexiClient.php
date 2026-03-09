@@ -215,4 +215,5 @@ class TinyPeexiClient
             throw new TinyPeexiException('Batch variant generation failed: ' . $response->body(), $response->status());
         }
     }
+
 }

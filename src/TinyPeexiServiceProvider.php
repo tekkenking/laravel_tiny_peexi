@@ -36,6 +36,10 @@ class TinyPeexiServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__ . '/../config/tinypeexi.php' => config_path('tinypeexi.php'),
             ], 'tinypeexi-config');
+
+            $this->commands([
+                \Tekkenking\TinyPeexi\Console\Commands\MigrateAssetsCommand::class,
+            ]);
         }
     }
 }
