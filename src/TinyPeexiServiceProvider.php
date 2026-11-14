@@ -23,6 +23,10 @@ class TinyPeexiServiceProvider extends ServiceProvider
         $this->app->singleton('tinypeexi', function ($app) {
             return new TinyPeexiClient(config('tinypeexi'));
         });
+
+        // The migrate command and the variant job type-hint the client class,
+        // so the container must be able to resolve it by class name too.
+        $this->app->alias('tinypeexi', TinyPeexiClient::class);
     }
 
     /**
